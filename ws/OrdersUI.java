@@ -43,6 +43,55 @@ public class OrdersUI
 		DateTimeFormatter dtf = null;				// Date object formatter
 		LocalDate localDate = null;					// Date object
 		WSClientAPI api = new WSClientAPI();	// RESTful api object
+		ClientLogger.info("Client application started"); // Logging when the application starts
+
+        // -------- Authentication Loop --------
+        boolean authenticated = false;
+        String token = "";
+        while (!authenticated) {
+            System.out.println("\nWelcome to the Orders Database!");
+            System.out.println("Select an option:");
+            System.out.println("0: Sign up");
+            System.out.println("1: Log in");
+            System.out.print(">>>> ");
+            int authChoice = keyboard.nextInt();
+            keyboard.nextLine();
+
+            System.out.print("Enter username: ");
+            String username = keyboard.nextLine();
+            System.out.print("Enter password: ");
+            String password = keyboard.nextLine();
+
+            try {
+                if (authChoice == 0) {
+                    // Sign up process
+					ClientLogger.info("User attempting to sign up with username: " + username);
+                    response = api.signup(username, password);
+                    System.out.println(response);
+					ClientLogger.info("Signup response received: " + response);
+                    // After sign-up, prompt for login.
+                } else if (authChoice == 1) {
+                    // Log in process
+                    token = api.login(username, password);
+                    // Here we assume that a valid token is returned in a straightforward manner.
+                    if (token != null && !token.isEmpty() && !token.contains("Invalid") && !token.contains("failed")) {
+                        System.out.println("Login successful! Your token: " + token);
+						ClientLogger.info("User " + username + " successfully logged in.");
+                        authenticated = true;
+                    } else {
+                        System.out.println("Login failed. Please try again.");
+						ClientLogger.warn("User " + username + " failed to log in. Invalid credentials.");
+                    }
+                } else {
+                    System.out.println("Invalid option. Please try again.");
+					ClientLogger.warn("User entered an invalid option for authentication.");
+                }
+            } catch (Exception e) {
+                System.out.println("Authentication error: " + e);
+				ClientLogger.error("Authentication error for user " + username + ": " + e.getMessage());
+            }
+        }
+        // -------- End Authentication Loop --------
 
 		/////////////////////////////////////////////////////////////////////////////////
 		// Main UI loop
@@ -57,7 +106,8 @@ public class OrdersUI
 			System.out.println( "Select an Option: \n" );
 			System.out.println( "1: Retrieve all orders in the order database." );
 			System.out.println( "2: Retrieve an order by ID." );
-			System.out.println( "3: Add a new order to the order database." );				
+			System.out.println( "3: Add a new order to the order database." );	
+			System.out.println( "4: Delete an order from the order database." );		
 			System.out.println( "X: Exit\n" );
 			System.out.print( "\n>>>> " );
 			option = keyboard.next().charAt(0);	
@@ -71,14 +121,17 @@ public class OrdersUI
 				// Here we retrieve all the orders in the order database
 
 				System.out.println( "\nRetrieving All Orders::" );
+				ClientLogger.info("User selected option 1: Retrieve all orders.");
 				try
 				{
-					response = api.retrieveOrders();
+					response = api.retrieveOrders(token);
 					System.out.println(response);
+					ClientLogger.info("Successfully retrieved all orders.");
 
 				} catch (Exception e) {
 
 					System.out.println("Request failed:: " + e);
+					ClientLogger.error("Failed to retrieve orders: " + e.getMessage());
 
 				}
 
@@ -107,6 +160,7 @@ public class OrdersUI
 					} catch (NumberFormatException e) {
 
 						System.out.println( "Not a number, please try again..." );
+						ClientLogger.error("User entered invalid order ID: " + orderid);
 						System.out.println("\nPress enter to continue..." );
 
 					} // if
@@ -115,12 +169,14 @@ public class OrdersUI
 
 				try
 				{
-					response = api.retrieveOrders(orderid);
+					response = api.retrieveOrders(orderid, token);
 					System.out.println(response);
+					ClientLogger.info("Successfully retrieved order with order id: " + orderid);
 
 				} catch (Exception e) {
 
 					System.out.println("Request failed:: " + e);
+					ClientLogger.error("Failed to retrieve order with order id: " + orderid + ": " + e.getMessage());
 					
 				}
 
@@ -168,24 +224,72 @@ public class OrdersUI
 					try
 					{
 						System.out.println("\nCreating order...");
-						response = api.newOrder(date, first, last, address, phone);
+						response = api.newOrder(date, first, last, address, phone, token);
 						System.out.println(response);
+						ClientLogger.info("Successfully created new order: ");
 
 					} catch(Exception e) {
 
 						System.out.println("Request failed:: " + e);
+						ClientLogger.error("Failed to create new order: " + e.getMessage());
 
 					}
 
 				} else {
 
 					System.out.println("\nOrder not created...");
+					ClientLogger.warn("User cancelled order creation.");
 				}
 
 				System.out.println("\nPress enter to continue..." );
 				c.readLine();
 
 				option = ' '; //Clearing option. This incase the user enterd X/x the program will not exit.
+
+			} // if
+
+			//////////// option 4 ////////////
+
+			if ( option == '4' )
+			{
+				// Here we get the order ID from the user
+
+				error = true;
+
+				while (error)
+				{
+					System.out.print( "\nEnter the order ID: " );
+					orderid = keyboard.nextLine();
+
+					try
+					{
+						Integer.parseInt(orderid);
+						error = false;
+					} catch (NumberFormatException e) {
+
+						System.out.println( "Not a number, please try again..." );
+						ClientLogger.error("User entered invalid order id for deletion: " + orderid);
+						System.out.println("\nPress enter to continue..." );
+
+					} // if
+
+				} // while
+
+				try
+				{
+					response = api.deleteOrder(orderid, token);
+					System.out.println(response);
+					ClientLogger.info("Successfully deleted order with order id: " + orderid);
+
+				} catch (Exception e) {
+
+					System.out.println("Request failed:: " + e);
+					ClientLogger.error("Failed to delete order with order id " + orderid + ": " + e.getMessage());
+					
+				}
+
+				System.out.println("\nPress enter to continue..." );
+				c.readLine();
 
 			} // if
 
@@ -197,11 +301,13 @@ public class OrdersUI
 
 				done = true;
 				System.out.println( "\nDone...\n\n" );
+				ClientLogger.info("User exited the application.");
 
 			} // if
 
 		} // while
-
+		ClientLogger.info("Shutting down client application.");
+		ClientLogger.shutdown();
   	} // main
 
 } // OrdersUI

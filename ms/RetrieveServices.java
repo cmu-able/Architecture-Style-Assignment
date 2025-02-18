@@ -71,9 +71,12 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
 
     // This method will return all the entries in the orderinfo database
 
-    public String retrieveOrders() throws RemoteException
+    public String retrieveOrders(String token) throws RemoteException
     {
       	// Local declarations
+        if (!SimpleTokenUtil.verifyToken(token)) {
+            throw new RemoteException("User not authenticated or token expired");
+        }
 
         Connection conn = null;		// connection to the orderinfo database
         Statement stmt = null;		// A Statement object is an interface that represents a SQL statement.
@@ -129,6 +132,8 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
 
             ReturnString = ReturnString +"]";
 
+            Logger.info("Successfully retrieved all orders: " + ReturnString);
+
             //Clean-up environment
 
             rs.close();
@@ -140,6 +145,7 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
         } catch(Exception e) {
 
             ReturnString = e.toString();
+            Logger.error("Failed to retrieve all orders!");
         } 
         
         return(ReturnString);
@@ -149,8 +155,11 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
     // This method will returns the order in the orderinfo database corresponding to the id
     // provided in the argument.
 
-    public String retrieveOrders(String orderid) throws RemoteException
+    public String retrieveOrders(String orderid, String token) throws RemoteException
     {
+        if (!SimpleTokenUtil.verifyToken(token)) {
+            throw new RemoteException("User not authenticated or token expired");
+        }
       	// Local declarations
 
         Connection conn = null;		// connection to the orderinfo database
@@ -209,6 +218,8 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
 
             ReturnString = ReturnString +"]";
 
+            Logger.info("Successfully retrieved order with order id:" + orderid);
+
             //Clean-up environment
 
             rs.close();
@@ -220,6 +231,7 @@ public class RetrieveServices extends UnicastRemoteObject implements RetrieveSer
         } catch(Exception e) {
 
             ReturnString = e.toString();
+            Logger.error("Failed to retrieve order with order id:" + orderid);
 
         } 
 

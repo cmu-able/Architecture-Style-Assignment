@@ -72,8 +72,12 @@ public class CreateServices extends UnicastRemoteObject implements CreateService
 
     // This method add the entry into the ms_orderinfo database
 
-    public String newOrder(String idate, String ifirst, String ilast, String iaddress, String iphone) throws RemoteException
+    public String newOrder(String idate, String ifirst, String ilast, String iaddress, String iphone, String token) throws RemoteException
     {
+        if (!SimpleTokenUtil.verifyToken(token)) {
+            throw new RemoteException("User not authenticated or token expired");
+        }
+        
       	// Local declarations
 
         Connection conn = null;		                 // connection to the orderinfo database
@@ -104,6 +108,8 @@ public class CreateServices extends UnicastRemoteObject implements CreateService
 
             stmt.executeUpdate(sql);
 
+            Logger.info("New order successfully created!");
+
             // clean up the environment
 
             stmt.close();
@@ -114,6 +120,7 @@ public class CreateServices extends UnicastRemoteObject implements CreateService
         } catch(Exception e) {
 
             ReturnString = e.toString();
+            Logger.error("Failed to create new order!");
         } 
         
         return(ReturnString);
