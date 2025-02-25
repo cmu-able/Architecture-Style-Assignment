@@ -96,7 +96,7 @@ REST_ROUTER.prototype.handleRoutes= function(router,connection) {
             if(err) {
                 res.json({"Error" : true, "Message" : "Error executing MySQL query"});
             } else {
-                res.json({"Error" : false, "Message" : "User Added !"});
+                res.json({"Error" : false, "Message" : "Order Added !"});
             }
         });
     });
